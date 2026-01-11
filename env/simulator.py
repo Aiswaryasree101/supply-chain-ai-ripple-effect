@@ -23,7 +23,7 @@ class SupplyChainSimulator:
                 continue  # disrupted node cannot ship
 
             available = self.nodes[src]["inventory"]
-            ship_qty = min(available, 200)
+            ship_qty = min(available, getattr(self, "custom_shipment_qty", 200))
 
             if ship_qty > 0:
                 self.nodes[src]["inventory"] -= ship_qty
