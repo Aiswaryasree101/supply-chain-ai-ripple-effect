@@ -7,11 +7,18 @@ demand = generate_demand()
 
 sim = SupplyChainSimulator(nodes, edges, demand)
 
-for day in range(5):
+for day in range(15):
+
+    # Inject disruption on day 5
+    if day == 5:
+        sim.inject_disruption("Port_JebelAli", duration=5)
+        print("DISRUPTION: Port_JebelAli shut down for 5 days")
+
     sim.step()
+
     print(f"Day {day+1}")
-    print(nodes)
+    print("Inventories:", nodes)
+    print("In transit:", len(sim.in_transit))
     print("Cost:", sim.total_cost)
     print("Unmet demand:", sim.total_unmet_demand)
-    print("-" * 40)
-
+    print("-" * 50)
