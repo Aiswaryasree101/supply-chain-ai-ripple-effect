@@ -1,4 +1,5 @@
 import numpy as np
+import random
 from .simulator import SupplyChainSimulator
 
 class SupplyChainEnv:
@@ -6,7 +7,15 @@ class SupplyChainEnv:
         self.sim = SupplyChainSimulator(nodes, edges, demand)
 
         # Action space: shipment size multiplier
-        self.actions = [50, 100, 200, 300]
+        self.actions = [
+            ("Supplier_India", 100),
+            ("Supplier_India", 300),
+            ("Supplier_Vietnam", 100),
+            ("Supplier_Vietnam", 300),
+            ("Supplier_UAE", 100),
+            ("Supplier_UAE", 300),
+        ]
+
 
     def reset(self):
         self.sim.day = 0
@@ -29,10 +38,12 @@ class SupplyChainEnv:
         return np.array(state, dtype=np.float32)
 
     def step(self, action_index):
-        shipment_qty = self.actions[action_index]
+        supplier, qty = self.actions[action_index]
+        self.sim.custom_source = supplier
+        self.sim.custom_shipment_qty = qty
 
-        # override shipment size
-        self.sim.custom_shipment_qty = shipment_qty
+        for k in self.sim.demand:
+            self.sim.demand[k] = max(10, self.sim.demand[k] + random.randint(-20, 20))
 
         self.sim.step()
 

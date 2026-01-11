@@ -8,37 +8,58 @@ class SupplyChainSimulator:
         self.total_cost = 0
         self.total_unmet_demand = 0
 
-        # shipment pipeline: list of (arrival_day, src, dst, qty)
+        # (arrival_day, destination, quantity)
         self.in_transit = []
 
-        # disruptions: node -> remaining days
+        # disruptions: node -> {"factor": float, "days": int}
         self.disruptions = {}
 
+        # RL controls
+        self.custom_shipment_qty = 200
+        self.custom_source = None
+
+    # -------------------------
+    # Shipping logic
+    # -------------------------
     def ship_goods(self):
         for edge in self.edges:
             src = edge["from"]
             dst = edge["to"]
 
+            # Agent-selected supplier
+            selected_src = self.custom_source if self.custom_source else src
+            if src != selected_src:
+                continue
+
+            # Disruption capacity factor
             if src in self.disruptions:
-                continue  # disrupted node cannot ship
+                factor = self.disruptions[src]["factor"]
+            else:
+                factor = 1.0
 
             available = self.nodes[src]["inventory"]
-            ship_qty = min(available, getattr(self, "custom_shipment_qty", 200))
 
-            if ship_qty > 0:
-                self.nodes[src]["inventory"] -= ship_qty
+            max_ship = int(self.custom_shipment_qty * factor)
+            ship_qty = min(available, max_ship)
 
-                arrival_day = self.day + edge["lead_time"]
-                self.in_transit.append((arrival_day, dst, ship_qty))
+            if ship_qty <= 0:
+                continue
 
-                self.total_cost += edge["cost"]
+            self.nodes[src]["inventory"] -= ship_qty
 
+            arrival_day = self.day + edge["lead_time"]
+            self.in_transit.append((arrival_day, dst, ship_qty))
+
+            self.total_cost += edge["cost"]
+
+    # -------------------------
+    # Shipment arrivals
+    # -------------------------
     def process_arrivals(self):
         arrived = []
 
         for shipment in self.in_transit:
             arrival_day, dst, qty = shipment
-
             if arrival_day <= self.day:
                 self.nodes[dst]["inventory"] += qty
                 arrived.append(shipment)
@@ -46,6 +67,9 @@ class SupplyChainSimulator:
         for s in arrived:
             self.in_transit.remove(s)
 
+    # -------------------------
+    # Demand fulfillment
+    # -------------------------
     def satisfy_demand(self):
         for retailer, qty in self.demand.items():
             available = self.nodes[retailer]["inventory"]
@@ -57,19 +81,30 @@ class SupplyChainSimulator:
                 self.total_unmet_demand += unmet
                 self.nodes[retailer]["inventory"] = 0
 
-    def inject_disruption(self, node, duration):
-        self.disruptions[node] = duration
+    # -------------------------
+    # Disruption handling
+    # -------------------------
+    def inject_disruption(self, node, factor=0.3, duration=5):
+        """
+        factor: remaining capacity (0.3 = 30%)
+        duration: days
+        """
+        self.disruptions[node] = {"factor": factor, "days": duration}
 
     def update_disruptions(self):
-        to_remove = []
-        for node in self.disruptions:
-            self.disruptions[node] -= 1
-            if self.disruptions[node] <= 0:
-                to_remove.append(node)
+        expired = []
 
-        for node in to_remove:
+        for node in self.disruptions:
+            self.disruptions[node]["days"] -= 1
+            if self.disruptions[node]["days"] <= 0:
+                expired.append(node)
+
+        for node in expired:
             del self.disruptions[node]
 
+    # -------------------------
+    # Simulation step
+    # -------------------------
     def step(self):
         self.day += 1
 
