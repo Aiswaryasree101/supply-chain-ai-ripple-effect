@@ -49,7 +49,7 @@ class SupplyChainEnv:
 
         next_state = self.get_state()
 
-        reward = - (self.sim.total_unmet_demand + 0.001 * self.sim.total_cost)
+        reward = -0.1 * self.sim.total_cost - 5 * self.sim.total_unmet_demand
 
         done = self.sim.day >= 30
 

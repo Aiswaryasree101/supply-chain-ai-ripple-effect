@@ -3,7 +3,7 @@ from env.rl_env import SupplyChainEnv
 from rl.dqn_agent import DQNAgent
 import numpy as np
 
-EPISODES = 30
+EPISODES = 300
 
 nodes = generate_nodes()
 edges = generate_edges()
@@ -20,7 +20,7 @@ for ep in range(EPISODES):
     state = env.reset()
     total_reward = 0
 
-    for step in range(30):
+    for step in range(300):
         action = agent.act(state)
         next_state, reward, done = env.step(action)
 
