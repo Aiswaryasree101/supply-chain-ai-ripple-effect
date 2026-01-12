@@ -44,3 +44,7 @@ for ep in range(EPISODES):
 print("Baseline average:")
 print("Cost:", sum(r[0] for r in baseline_results)/EPISODES)
 print("Unmet:", sum(r[1] for r in baseline_results)/EPISODES)
+
+with open("evaluation/baseline_results.csv", "w") as f:
+    for c, u in baseline_results:
+        f.write(f"{c},{u}\n")

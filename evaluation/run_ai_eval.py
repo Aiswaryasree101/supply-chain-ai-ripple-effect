@@ -59,3 +59,7 @@ for ep in range(EPISODES):
 print("AI average:")
 print("Cost:", sum(r[0] for r in ai_results)/EPISODES)
 print("Unmet:", sum(r[1] for r in ai_results)/EPISODES)
+
+with open("evaluation/ai_results.csv", "w") as f:
+    for c, u in ai_results:
+        f.write(f"{c},{u}\n")
